@@ -2,8 +2,6 @@ package main
 
 import (
 	"bufio"
-	"crypto/tls"
-	"fmt"
 	"log"
 	"net"
 	"strings"
@@ -42,6 +40,7 @@ func getCommand(line string) string {
 	case strings.HasPrefix(line, "RSET"):
 		return "RSET"
 	}
+
 	return ""
 }
 
@@ -75,7 +74,6 @@ func handleConnection(c net.Conn) {
 			}
 
 			c.Write([]byte("250-mx.localhost\r\n"))
-			c.Write([]byte("250-STARTTLS\r\n"))
 			c.Write([]byte("250 HELP\r\n"))
 			state = Helo
 
@@ -149,17 +147,11 @@ func handleConnection(c net.Conn) {
 }
 
 func main() {
-	cert, err := tls.LoadX509KeyPair("cert.pem", "key.pem")
-	if err != nil {
-		log.Fatal("Failed to load TLS cert:", err)
-	}
-	tlsConfig := &tls.Config{Certificates: []tls.Certificate{cert}}
-
-	listener, err := tls.Listen("tcp", ":465", tlsConfig)
+	listener, err := net.Listen("tcp", ":25")
 	if err != nil {
 		log.Fatal("Error creating listener.", err)
 	}
-	log.Println("TCP established. Listening on port 465...")
+	log.Println("TCP established. Listening on port 25...")
 	defer listener.Close()
 
 	for {
@@ -169,7 +161,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("Accepting connections...")
+		log.Println("Accepting connections...")
 		go handleConnection(conn)
 	}
 }
