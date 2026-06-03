@@ -163,6 +163,8 @@ func handleConnection(c net.Conn) {
 			to.Reset()
 			state = Helo
 
+			log.Println("Done.")
+
 		default:
 			c.Write([]byte("500 Unrecognized command\r\n"))
 		}
