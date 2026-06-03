@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -132,11 +133,19 @@ func handleConnection(c net.Conn) {
 				body.WriteString("\r\n")
 			}
 
+			fileCount := 0
 			folderPath := filepath.Join("mails")
-			fileName := time.Now().UTC().Format(time.RFC3339)
+			entries, err := os.ReadDir(folderPath)
+			if err == nil {
+				for range entries {
+					fileCount++
+				}
+			}
+
+			fileName := strconv.Itoa(fileCount) + " - " + time.Now().UTC().Format(time.RFC3339)
 			fullPath := filepath.Join(folderPath, fileName)
 
-			err := os.MkdirAll(folderPath, 0755)
+			err = os.MkdirAll(folderPath, 0755)
 			if err != nil {
 				log.Print("Fail to create folder ", err)
 				return
