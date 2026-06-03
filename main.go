@@ -4,7 +4,10 @@ import (
 	"bufio"
 	"log"
 	"net"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 )
 
 type State int
@@ -48,7 +51,7 @@ func handleConnection(c net.Conn) {
 	defer c.Close()
 
 	var state State = Greet
-	c.Write([]byte("220 mx.localhost ESMTP read\r\n"))
+	c.Write([]byte("220 wnadzahari.online ESMTP read\r\n"))
 	scanner := bufio.NewScanner(c)
 
 	var from string
@@ -64,7 +67,7 @@ func handleConnection(c net.Conn) {
 				return
 			}
 
-			c.Write([]byte("250 mx.localhost\r\n"))
+			c.Write([]byte("250 wnadzahari.online\r\n"))
 			state = Helo
 
 		case "EHLO":
@@ -73,7 +76,7 @@ func handleConnection(c net.Conn) {
 				return
 			}
 
-			c.Write([]byte("250-mx.localhost\r\n"))
+			c.Write([]byte("250-wnadzahari.online\r\n"))
 			c.Write([]byte("250 HELP\r\n"))
 			state = Helo
 
@@ -129,8 +132,28 @@ func handleConnection(c net.Conn) {
 				body.WriteString("\r\n")
 			}
 
-			log.Printf("Received email from %s to %s, %d bytes", from, to.String(), body.Len())
-			log.Printf("Email content:\n======\n%s\n======\n", body.String())
+			folderPath := filepath.Join("mails")
+			fileName := time.Now().UTC().Format(time.RFC3339)
+			fullPath := filepath.Join(folderPath, fileName)
+
+			err := os.MkdirAll(folderPath, 0755)
+			if err != nil {
+				log.Print("Fail to create folder ", err)
+				return
+			}
+
+			file, err := os.OpenFile(fullPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+			if err != nil {
+				log.Print("Fail to create file: ", err)
+				return
+			}
+			defer file.Close()
+
+			file.WriteString("From: " + from + "\n")
+			file.WriteString("To: " + to.String() + "\n")
+			file.WriteString("\n" + body.String())
+
+			c.Write([]byte("250 OK\r\n"))
 
 			from = ""
 			to.Reset()
@@ -165,3 +188,7 @@ func main() {
 		go handleConnection(conn)
 	}
 }
+
+// sudo setcap 'cap_net_bind_service=+ep' ./smtp
+
+// swaks --to ari@localhost --from swak@localhost --port 25
