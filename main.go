@@ -149,9 +149,13 @@ func handleConnection(c net.Conn) {
 			}
 			defer file.Close()
 
+			file.WriteString("=====FROM======\n")
 			file.WriteString("From: " + from + "\n")
+			file.WriteString("=====TO======\n")
 			file.WriteString("To: " + to.String() + "\n")
+			file.WriteString("=====BODY======\n")
 			file.WriteString("\n" + body.String())
+			file.WriteString("=====END======\n")
 
 			c.Write([]byte("250 OK\r\n"))
 
